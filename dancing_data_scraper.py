@@ -41,23 +41,53 @@ def scrape_swing_planit():
 							event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
 			event_list.append(event)
 	return event_list
-	import pdb; pdb.set_trace()
 
 def scrape_dance_cal():
 	soup = get_soup(URL_DC)
 	for event_div in soup.findAll('div', {'class' : 'DCListEvent'}):
-		# if 'DCListEvent' in event_div['class']:
-		print(event_div)
-		import pdb; pdb.set_trace()
+		event = Event()
+		for span in event_div.findAll('span'):
+			if 'DCEventInfoDate' in span['class']:
+				event.dates = span.text
+			if 'DCListName' in span['class']:
+				event.name = span.text.strip()
+				for a_tag in span.findAll('a', href=True):
+					event.url = a_tag['href']
+			if 'DCEventInfoWhere' in span['class']:
+				location_list = span.text.replace(':',',').split(',')
+				if len(location_list) == 3:
+					event.country = location_list[2].strip()
+					event.city = location_list[1].strip()
+				if len(location_list) == 4:
+					event.country = location_list[3].strip()
+					event.state = location_list[2].strip()
+					event.city = location_list[1].strip()
+			if 'DCEventInfoDances' in span['class']:
+				event.dance_styles = span.text.split(': ')[1].lower().strip()
+			if 'DCEventInfoTeachers' in span['class']:
+				event.teachers = str(span).replace('<br/>', '$').replace(':', '$').replace('</i>', '$').replace('|', 'and').split('$')[1:-1]
+			if 'DCEventInfoDesc' in span['class']:
+				event.details = span.text.strip()
+			if 'DCEventInfoBands' in span['class']:
+				event.bands = span.text.split(':')[1].strip()
+				import pdb; pdb.set_trace()
+		# print('Name: {}, Location: {}, {}, Dances: {}, Dates: {}'.format(event.name, event.city, event.country, event.dance_styles, event.dates))
+
 
 
 
 
 # Scrape from swingplanit.com
-scrape_swing_planit()
+# scrape_swing_planit()
 
 # scrape from dancecal.com
 scrape_dance_cal()
+
+# Start with event list from DanceCal
+# loop through event_list
+# loop through events in swing planit
+# if the events don't exist in event_list, add event and accompanying information to event_list
+
 
 
 # events = soup.findAll("li", { "class" : "color-shape" })
