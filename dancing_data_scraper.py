@@ -3,7 +3,7 @@ import requests
 import re
 from event import Event
 
-URL = 'http://www.swingplanit.com'
+URL_SP = 'http://www.swingplanit.com'
 splitters = ['?', ':']
 event_list =[]
 def get_soup(url):
@@ -15,7 +15,7 @@ def get_soup(url):
 # def get_event_link(soup)
 
 # def main():
-soup = get_soup(URL)
+soup = get_soup(URL_SP)
 # events = soup.findAll("li", { "class" : "color-shape" })
 for a_tag in soup.findAll('a', href=True):
 	if a_tag.parent.name == 'li':
@@ -28,6 +28,8 @@ for a_tag in soup.findAll('a', href=True):
 				event_soup = get_soup(a_tag['href'])
 				event = Event()
 				event.name = event_soup.title.text
+				event.details = event_soup.findAll('p')[0].text
+				event.teachers = event_soup.findAll('p')[2].text.split(', ')
 				li_tags = event_soup.findAll('li')
 				for li in li_tags:
 					li_text = (li.get_text())
@@ -46,13 +48,12 @@ for a_tag in soup.findAll('a', href=True):
 							if li_text.split(splitter,1)[0].lower() == 'styles':
 								event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
 				event_list.append(event)
-				# import pdb; pdb.set_trace()
+				import pdb; pdb.set_trace()
 		except KeyError:
 			# Put in this try except to stop it from breaking when
 			# encountering parents with no class
 			continue
 
-import pdb; pdb.set_trace()
 
 
 # For each item in list:
