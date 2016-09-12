@@ -6,6 +6,8 @@ import datetime
 from dateutil.parser import parse
 import calendar
 import pdb
+import csv
+import time
 
 URL_SP = 'http://www.swingplanit.com'
 URL_DC = 'http://dancecal.com/?sMon=9&sYear=2016&num=12&hidetype=&list=1&theme=&hidedanceIcon='
@@ -29,7 +31,8 @@ def scrape_swing_planit():
 			event.name = event_soup.title.text
 			event_name_list.append(event.name)
 			event.details = event_soup.findAll('p')[0].text
-			event.teachers = event_soup.findAll('p')[2].text.split(', ')
+			event.teachers = event_soup.findAll('p')[2].text
+			# event.teachers = event_soup.findAll('p')[2].text.split(', ')
 			li_tags = event_soup.findAll('li')
 			for li in li_tags:
 				li_text = (li.get_text())
@@ -37,14 +40,11 @@ def scrape_swing_planit():
 					if splitter in li_text:
 						print(event.name + li_text.split(splitter,1)[0] + ': ' + 
 							  li_text.split(splitter,1)[1])
-						try:
-							if li_text.split(splitter,1)[0].lower() == 'when':
-								date_range = li_text.split(splitter,1)[1].strip()
-								date_range = date_range.split(' - ')
-								event.start_date = parse(date_range[0])
-								event.end_date = parse(date_range[1])
-						except:
-							import pdb; pdb.set_trace()
+						if li_text.split(splitter,1)[0].lower() == 'when':
+							date_range = li_text.split(splitter,1)[1].strip()
+							date_range = date_range.split(' - ')
+							event.start_date = parse(date_range[0])
+							event.end_date = parse(date_range[1])
 						if li_text.split(splitter,1)[0].lower() == 'country':
 							event.country = li_text.split(splitter,1)[1].strip()
 						if li_text.split(splitter,1)[0].lower() == 'town':
@@ -52,37 +52,41 @@ def scrape_swing_planit():
 						if li_text.split(splitter,1)[0].lower() == 'website':
 							event.url = li_text.split(splitter,1)[1].strip()
 						if li_text.split(splitter,1)[0].lower() == 'styles':
-							event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
+							event.dance_styles = li_text.split(splitter,1)[1].lower().strip()
+							# event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
 			event_list.append(event)
 	return event_list
 
 def scrape_dance_cal():
 	soup = get_soup(URL_DC)
 	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:20]:
+		name = None
 		event = Event()
 		for span in event_div.findAll('span'):
-			if 'DCEventInfoDate' in span['class']:
-				event.start_date = parse(span.text)
-				# Now need to guess what the end_date will be since this site does not provide it
-				# I'm going to assume that events will tend to end on a Sunday
-				# For example, if an event starts on a friday, I will make it's end-date two days later. 
-				weekday = event.start_date.weekday()
-				gap = datetime.timedelta(days = 6 - weekday)
-				event.end_date = event.start_date + gap
 
 			if 'DCListName' in span['class']:
-				event.name = span.text.strip()
-				for a_tag in span.findAll('a', href=True):
-					event.url = a_tag['href']
-			if event.name in event_name_list:
+				name = span.text.strip()
+			if name in event_name_list:
 				# checks to see if the event name already exists in the instance list
 				# If it does, it skips it
-				break
+				continue
 				# TKTK add state and bands to the instances
 				# these items are listed in the dancecal website, and not on swingplanit
 			else:
 				# This means the event does not already exist in the instance list
 				# and will be added
+				if 'DCListName' in span['class']:
+					event.name = span.text.strip()
+					for a_tag in span.findAll('a', href=True):
+						event.url = a_tag['href']
+				if 'DCEventInfoDate' in span['class']:
+					event.start_date = parse(span.text)
+					# Now need to guess what the end_date will be since this site does not provide it
+					# I'm going to assume that events will tend to end on a Sunday
+					# For example, if an event starts on a friday, I will make it's end-date two days later. 
+					weekday = event.start_date.weekday()
+					gap = datetime.timedelta(days = 6 - weekday)
+					event.end_date = event.start_date + gap
 				if 'DCEventInfoWhere' in span['class']:
 					location_list = span.text.replace(':',',').split(',')
 					if len(location_list) == 3:
@@ -114,3 +118,22 @@ scrape_swing_planit()
 
 # scrape from dancecal.com
 scrape_dance_cal()
+
+headers = ['name', 'start date', 'end date', 'city', 'state', 'country', 'dance_styles', 'url', 'details', 'teachers', 'bands', 'status']
+
+with open('test.csv', 'w') as f:
+	writer = csv.writer(f)
+	# writer.writerow(headers)
+	for event in event_list:
+		print(event.name)
+		try:
+			start = event.start_date.strftime('%m/%d/%Y')
+			end = event.end_date.strftime('%m/%d/%Y')
+			row = [event.name, start, end, event.city, event.state,
+				   event.country, event.dance_styles, event.url, event.details, 
+				   event.teachers, event.bands, event.status]
+			writer.writerow(row)
+		except:
+			pdb.set_trace()
+
+pdb.set_trace()
