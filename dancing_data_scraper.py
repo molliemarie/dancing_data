@@ -112,7 +112,7 @@ def scrape_dance_cal():
 def all_event_info_to_csv():
 	headers = ['name', 'start date', 'end date', 'city', 'state', 'country', 'dance_styles', 'url', 'details', 'teachers', 'bands', 'status']
 
-	with open('test.csv', 'w') as f:
+	with open('scraped_event_info.csv', 'w') as f:
 		writer = csv.writer(f)
 		writer.writerow(headers)
 		for event in event_list:
@@ -123,6 +123,13 @@ def all_event_info_to_csv():
 				   event.teachers, event.bands, event.status]
 			writer.writerow(row)
 
+def event_names_to_csv():
+	with open('change_name_before_editing.csv', 'w') as f:
+		writer = csv.writer(f)
+		writer.writerow(['event'])
+		for event in event_list:
+			writer.writerow([event.name])
+
 
 
 # Scrape from swingplanit.com
@@ -132,5 +139,12 @@ scrape_swing_planit()
 # scrape from dancecal.com
 scrape_dance_cal()
 
-all_event_info_to_csv()
+# all_event_info_to_csv()
+
+event_names_to_csv()
+
+
+
+# TKTK Swingala (with accent over i) does not print correctly in csv. 
+# Is it just the csv, or is it also messed up within instance?
 
