@@ -4,6 +4,8 @@ import re
 from event import Event
 import datetime
 from dateutil.parser import parse
+import calendar
+import pdb
 
 URL_SP = 'http://www.swingplanit.com'
 URL_DC = 'http://dancecal.com/?sMon=9&sYear=2016&num=12&hidetype=&list=1&theme=&hidedanceIcon='
@@ -61,6 +63,13 @@ def scrape_dance_cal():
 		for span in event_div.findAll('span'):
 			if 'DCEventInfoDate' in span['class']:
 				event.start_date = parse(span.text)
+				# Now need to guess what the end_date will be since this site does not provide it
+				# I'm going to assume that events will tend to end on a Sunday
+				# For example, if an event starts on a friday, I will make it's end-date two days later. 
+				weekday = event.start_date.weekday()
+				gap = datetime.timedelta(days = 6 - weekday)
+				event.end_date = event.start_date + gap
+
 			if 'DCListName' in span['class']:
 				event.name = span.text.strip()
 				for a_tag in span.findAll('a', href=True):
@@ -105,4 +114,3 @@ scrape_swing_planit()
 
 # scrape from dancecal.com
 scrape_dance_cal()
-import pdb; pdb.set_trace()
