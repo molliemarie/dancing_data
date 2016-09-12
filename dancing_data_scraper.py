@@ -2,6 +2,8 @@ import bs4
 import requests
 import re
 from event import Event
+import datetime
+from dateutil.parser import parse
 
 URL_SP = 'http://www.swingplanit.com'
 URL_DC = 'http://dancecal.com/?sMon=3&sYear=2016&num=10&list=1&theme=&hidetype=&hidedanceIcon='
@@ -30,7 +32,9 @@ def scrape_swing_planit():
 						print(li_text.split(splitter,1)[0] + ': ' + 
 							  li_text.split(splitter,1)[1])
 						if li_text.split(splitter,1)[0].lower() == 'when':
-							event.dates = li_text.split(splitter,1)[1].strip()
+							date_range = li_text.split(splitter,1)[1].strip()
+							event.start_date = parse(date_range[0])
+							event.end_date = parse(date_range[1])
 						if li_text.split(splitter,1)[0].lower() == 'country':
 							event.country = li_text.split(splitter,1)[1].strip()
 						if li_text.split(splitter,1)[0].lower() == 'town':
@@ -48,7 +52,8 @@ def scrape_dance_cal():
 		event = Event()
 		for span in event_div.findAll('span'):
 			if 'DCEventInfoDate' in span['class']:
-				event.dates = span.text
+				event.dates = parese(span.text)
+				import pdb; pdb.set_trace()
 			if 'DCListName' in span['class']:
 				event.name = span.text.strip()
 				for a_tag in span.findAll('a', href=True):
@@ -70,7 +75,6 @@ def scrape_dance_cal():
 				event.details = span.text.strip()
 			if 'DCEventInfoBands' in span['class']:
 				event.bands = span.text.split(':')[1].strip()
-				import pdb; pdb.set_trace()
 		# print('Name: {}, Location: {}, {}, Dances: {}, Dates: {}'.format(event.name, event.city, event.country, event.dance_styles, event.dates))
 
 

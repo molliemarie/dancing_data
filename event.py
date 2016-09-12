@@ -1,11 +1,12 @@
 
 
 class Event(object):
-	def __init__(self, name=None, dates=None, country=None, 
+	def __init__(self, name=None, start_date=None, end_date=None, country=None, 
 				 city=None, state=None, url=None, dance_styles=None,
 				 details=None, teachers=None, bands=None, status=None):
 		self.name = name
-		self.dates = dates
+		self.start_date = start_date
+		self.end_date = end_date
 		self.country = country
 		self.city = city
 		self.url = url
