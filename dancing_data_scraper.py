@@ -24,7 +24,7 @@ def get_soup(url):
 
 def scrape_swing_planit():
 	soup = get_soup(URL_SP)
-	for event_list_item in soup.findAll('li', {'class' : 'color-shape'})[0:8]:
+	for event_list_item in soup.findAll('li', {'class' : 'color-shape'}):
 		for a_tag in event_list_item.findAll('a', href=True):
 			event_soup = get_soup(a_tag['href'])
 			event = Event()
@@ -59,7 +59,7 @@ def scrape_swing_planit():
 
 def scrape_dance_cal():
 	soup = get_soup(URL_DC)
-	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:20]:
+	for event_div in soup.findAll('div', {'class' : 'DCListEvent'}):
 		name = None
 		event = Event()
 		for span in event_div.findAll('span'):
@@ -104,11 +104,24 @@ def scrape_dance_cal():
 					event.details = span.text.strip()
 				if 'DCEventInfoBands' in span['class']:
 					event.bands = span.text.split(':')[1].strip()
-		event_list.append(event)
+		if event.name != None:
+			event_list.append(event)
 	return event_list
 				# print('Name: {}, Location: {}, {}, Dances: {}, Dates: {}'.format(event.name, event.city, event.country, event.dance_styles, event.start_date))
 
+def all_event_info_to_csv():
+	headers = ['name', 'start date', 'end date', 'city', 'state', 'country', 'dance_styles', 'url', 'details', 'teachers', 'bands', 'status']
 
+	with open('test.csv', 'w') as f:
+		writer = csv.writer(f)
+		writer.writerow(headers)
+		for event in event_list:
+			start = event.start_date.strftime('%m/%d/%Y')
+			end = event.end_date.strftime('%m/%d/%Y')
+			row = [event.name, start, end, event.city, event.state,
+				   event.country, event.dance_styles, event.url, event.details, 
+				   event.teachers, event.bands, event.status]
+			writer.writerow(row)
 
 
 
@@ -119,21 +132,5 @@ scrape_swing_planit()
 # scrape from dancecal.com
 scrape_dance_cal()
 
-headers = ['name', 'start date', 'end date', 'city', 'state', 'country', 'dance_styles', 'url', 'details', 'teachers', 'bands', 'status']
+all_event_info_to_csv()
 
-with open('test.csv', 'w') as f:
-	writer = csv.writer(f)
-	# writer.writerow(headers)
-	for event in event_list:
-		print(event.name)
-		try:
-			start = event.start_date.strftime('%m/%d/%Y')
-			end = event.end_date.strftime('%m/%d/%Y')
-			row = [event.name, start, end, event.city, event.state,
-				   event.country, event.dance_styles, event.url, event.details, 
-				   event.teachers, event.bands, event.status]
-			writer.writerow(row)
-		except:
-			pdb.set_trace()
-
-pdb.set_trace()
