@@ -8,6 +8,11 @@ import calendar
 import pdb
 import csv
 import time
+import gspread
+import json
+from oauth2client.service_account import ServiceAccountCredentials
+
+
 
 URL_SP = 'http://www.swingplanit.com'
 URL_DC = 'http://dancecal.com/?sMon=9&sYear=2016&num=12&hidetype=&list=1&theme=&hidedanceIcon='
@@ -118,7 +123,7 @@ def all_event_info_to_csv():
 		for event in event_list:
 			start = event.start_date.strftime('%m/%d/%Y')
 			end = event.end_date.strftime('%m/%d/%Y')
-			row = [event.name, start, end, event.city, event.state,
+			row = [event.name.encode('latin-1'), start, end, event.city, event.state,
 				   event.country, event.dance_styles, event.url, event.details, 
 				   event.teachers, event.bands, event.status]
 			writer.writerow(row)
@@ -133,15 +138,31 @@ def event_names_to_csv():
 
 
 # Scrape from swingplanit.com
-scrape_swing_planit()
+# scrape_swing_planit()
 
 
 # scrape from dancecal.com
 scrape_dance_cal()
 
 # all_event_info_to_csv()
+#
+# event_names_to_csv()
 
-event_names_to_csv()
+# Set up gspread
+scope = ['https://spreadsheets.google.com/feeds']
+credentials = ServiceAccountCredentials.from_json_keyfile_name('/Users/mollie/Dropbox (Datascope Analytics)/dancing_data/drive_key.json', scope)
+gc = gspread.authorize(credentials)
+spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV8QaWJg9OYzaaYSvCBrmT50vrDN84cJzA0/edit#gid=0")
+worksheet = spreadsheet.worksheet('Sheet1')
+
+for event in event_list:
+	print(event.name)
+	start = event.start_date.strftime('%m/%d/%Y')
+	end = event.end_date.strftime('%m/%d/%Y')
+	row = [event.name, start, end, event.city, event.state,
+		   event.country, event.dance_styles, event.url, event.details, 
+		   event.teachers, event.bands, event.status]
+	worksheet.append_row(row)
 
 
 
