@@ -64,7 +64,7 @@ def scrape_swing_planit():
 
 def scrape_dance_cal():
 	soup = get_soup(URL_DC)
-	for event_div in soup.findAll('div', {'class' : 'DCListEvent'}):
+	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:10]:
 		name = None
 		event = Event()
 		for span in event_div.findAll('span'):
@@ -162,10 +162,19 @@ for event in event_list:
 	row = [event.name, start, end, event.city, event.state,
 		   event.country, event.dance_styles, event.url, event.details, 
 		   event.teachers, event.bands, event.status]
-	worksheet.append_row(row)
+	worksheet.insert_row(row)
 
 
 
 # TKTK Swingala (with accent over i) does not print correctly in csv. 
 # Is it just the csv, or is it also messed up within instance?
+
+# TKTK lowercase all event names when comparing
+
+# Name and year to index of row
+# when needing to replace
+
+# for row_number, row  in enumerate(utils.iter_worksheeet(spreadsheet, 'sheet1', header_row = ??)):
+	# key = row['name'], row['start']
+	# unique[key] = row_number
 
