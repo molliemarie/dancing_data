@@ -38,7 +38,7 @@ def iter_worksheet(spreadsheet, worksheet_name,
     # index once and store the header row
     if as_dict or has_header:
         header = raw_row_list[row_index - 1]
-        row_index += 1
+        # row_index += 1
 
     # yield either dictionaries or lists depending on the as_dict
     # parameter
@@ -47,8 +47,7 @@ def iter_worksheet(spreadsheet, worksheet_name,
             row_dict = dict(zip(header, row))
             yield row_dict
         else:
-            yield row
-    # pdb.set_trace()
+            yield row    
 
 
 def gspread_connection(json_configuration_file):
