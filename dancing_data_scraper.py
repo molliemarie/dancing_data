@@ -17,11 +17,17 @@ import utils
 
 URL_SP = 'http://www.swingplanit.com'
 URL_DC = 'http://dancecal.com/?sMon=9&sYear=2016&num=12&hidetype=&list=1&theme=&hidedanceIcon='
-splitters = ['?', ':']
+SPLITTERS = ['?', ':']
 event_list =[]
 event_name_list = []
-dates = []
-dates_formatted = []
+
+# Set up gspread
+scope = ['https://spreadsheets.google.com/feeds']
+credentials = ServiceAccountCredentials.from_json_keyfile_name('/Users/mollie/Dropbox (Datascope Analytics)/dancing_data/drive_key.json', scope)
+gc = gspread.authorize(credentials)
+spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV8QaWJg9OYzaaYSvCBrmT50vrDN84cJzA0/edit#gid=0")
+worksheet = spreadsheet.worksheet('Sheet1')
+
 def get_soup(url):
     """Download and convert to BeautifulSoup."""
     response = requests.get(url)
@@ -42,7 +48,7 @@ def scrape_swing_planit():
 			li_tags = event_soup.findAll('li')
 			for li in li_tags:
 				li_text = (li.get_text())
-				for splitter in splitters:
+				for splitter in SPLITTERS:
 					if splitter in li_text:
 						print(event.name + li_text.split(splitter,1)[0] + ': ' + 
 							  li_text.split(splitter,1)[1])
@@ -65,7 +71,7 @@ def scrape_swing_planit():
 
 def scrape_dance_cal():
 	soup = get_soup(URL_DC)
-	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:3]:
+	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:1]:
 		name = None
 		event = Event()
 		for span in event_div.findAll('span'):
@@ -136,6 +142,25 @@ def event_names_to_csv():
 		for event in event_list:
 			writer.writerow([event.name])
 
+def event_info_to_googledoc():
+	for event in event_list:
+		print(event.name)
+		start = event.start_date.strftime('%m/%d/%Y')
+		end = event.end_date.strftime('%m/%d/%Y')
+		row = [event.name, start, end, event.city, event.state,
+			   event.country, event.dance_styles, event.status, event.url, 
+			   event.teachers, event.bands, event.details]
+		worksheet.insert_row(row, index=2)
+
+def pull_googledoc_info():
+	keys = []
+	for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
+		pdb.set_trace()
+		key = row['name'].lower(), parse(row['start date']).year
+		keys.append(key)
+	return keys
+			
+
 
 
 # Scrape from swingplanit.com
@@ -143,27 +168,21 @@ def event_names_to_csv():
 
 
 # scrape from dancecal.com
-scrape_dance_cal()
+# scrape_dance_cal()
 
 # all_event_info_to_csv()
 #
 # event_names_to_csv()
 
-# Set up gspread
-scope = ['https://spreadsheets.google.com/feeds']
-credentials = ServiceAccountCredentials.from_json_keyfile_name('/Users/mollie/Dropbox (Datascope Analytics)/dancing_data/drive_key.json', scope)
-gc = gspread.authorize(credentials)
-spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV8QaWJg9OYzaaYSvCBrmT50vrDN84cJzA0/edit#gid=0")
-worksheet = spreadsheet.worksheet('Sheet1')
+# event_info_to_googledoc()
 
-for event in event_list:
-	print(event.name)
-	start = event.start_date.strftime('%m/%d/%Y')
-	end = event.end_date.strftime('%m/%d/%Y')
-	row = [event.name, start, end, event.city, event.state,
-		   event.country, event.dance_styles, event.status, event.url, 
-		   event.teachers, event.bands, event.details]
-	worksheet.insert_row(row, index=2)
+pull_googledoc_info()
+
+
+
+
+
+
 
 
 
