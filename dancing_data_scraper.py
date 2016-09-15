@@ -11,6 +11,7 @@ import time
 import gspread
 import json
 from oauth2client.service_account import ServiceAccountCredentials
+import utils
 
 
 
@@ -64,7 +65,7 @@ def scrape_swing_planit():
 
 def scrape_dance_cal():
 	soup = get_soup(URL_DC)
-	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:10]:
+	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:3]:
 		name = None
 		event = Event()
 		for span in event_div.findAll('span'):
@@ -160,9 +161,9 @@ for event in event_list:
 	start = event.start_date.strftime('%m/%d/%Y')
 	end = event.end_date.strftime('%m/%d/%Y')
 	row = [event.name, start, end, event.city, event.state,
-		   event.country, event.dance_styles, event.url, event.details, 
-		   event.teachers, event.bands, event.status]
-	worksheet.insert_row(row)
+		   event.country, event.dance_styles, event.status, event.url, 
+		   event.teachers, event.bands, event.details]
+	worksheet.insert_row(row, index=2)
 
 
 
