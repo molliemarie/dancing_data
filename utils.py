@@ -6,10 +6,11 @@ project. For example,
 """
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import pdb
 
 
 def iter_worksheet(spreadsheet, worksheet_name,
-                   as_dict=True, header_row=0):
+                   as_dict=True, header_row=1):
     """Get all rows of one worksheet of a spreadsheet, either in
     dictionary format (as_dict=True) or as lists of cell values. This
     is analogous iterating over csv.reader or csv.DictReader.
@@ -29,14 +30,14 @@ def iter_worksheet(spreadsheet, worksheet_name,
     raw_row_list = worksheet.get_all_values()
 
     # row_index stores the row we're going to read
-    row_index = 0
+    row_index = 2
     if has_header:
         row_index = header_row
 
     # if reading as dictionary or skipping header row, advance the
     # index once and store the header row
     if as_dict or has_header:
-        header = raw_row_list[row_index]
+        header = raw_row_list[row_index - 1]
         row_index += 1
 
     # yield either dictionaries or lists depending on the as_dict
@@ -47,6 +48,7 @@ def iter_worksheet(spreadsheet, worksheet_name,
             yield row_dict
         else:
             yield row
+    # pdb.set_trace()
 
 
 def gspread_connection(json_configuration_file):
