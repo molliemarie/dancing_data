@@ -91,7 +91,10 @@ def scrape_dance_cal(keys_from_spreadsheet):
 
 			if 'DCListName' in span['class']:
 				name = span.text.strip()
-			if name.lower() in event_name_list:
+			print(name)
+			if name == None:
+				continue
+			elif name.lower() in event_name_list:
 				# checks to see if the event name already exists in the instance list
 				# If it does, it skips it
 				continue
@@ -127,7 +130,7 @@ def scrape_dance_cal(keys_from_spreadsheet):
 					event.details = span.text.strip()
 				if 'DCEventInfoBands' in span['class']:
 					event.bands = span.text.split(':')[1].strip()
-			event.key, event_list = update_key_and_event_list(event)
+		event.key, event_list = update_key_and_event_list(event)
 		if event.name != None:
 			event_list.append(event)
 	return event_list
@@ -161,13 +164,11 @@ def mark_obsolete_events():
 # These keys are used to prevent duplication in spreadsheet
 keys_from_spreadsheet = pull_googledoc_keys()
 
-
 # Scrape from swingplanit.com
 scrape_swing_planit(keys_from_spreadsheet)
 
-
 # scrape from dancecal.com
-scrape_dance_cal()
+scrape_dance_cal(keys_from_spreadsheet)
 
 # Once done scraping, this will take all the new rows and push them into the google doc.
 event_info_to_googledoc()
