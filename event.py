@@ -3,7 +3,8 @@
 class Event(object):
 	def __init__(self, name=None, start_date=None, end_date=None, country=None, 
 				 city=None, state=None, url=None, dance_styles=None,
-				 details=None, teachers=None, bands=None, status=None):
+				 details=None, teachers=None, bands=None, status=None, key=None,
+				 obsolete=None):
 		self.name = name
 		self.start_date = start_date
 		self.end_date = end_date
@@ -16,6 +17,8 @@ class Event(object):
 		self.state = state
 		self.bands = bands
 		self.status = 'upcoming'
+		self.key = key
+		self.obsolete = 0
 
 
 		def __str__(self):

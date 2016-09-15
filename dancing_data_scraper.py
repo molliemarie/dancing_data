@@ -31,8 +31,8 @@ worksheet = spreadsheet.worksheet('Sheet1')
 def pull_googledoc_keys():
 	keys_from_spreadsheet = []
 	for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
-		key = row['name'].lower(), parse(row['start date']).year
-		keys_from_spreadsheet.append(key)
+		# key = row['name'].lower(), parse(row['start date']).year
+		keys_from_spreadsheet.append(row['key'])
 	return keys_from_spreadsheet
 
 def get_soup(url):
@@ -40,6 +40,12 @@ def get_soup(url):
     response = requests.get(url)
     soup = bs4.BeautifulSoup(response.text, "lxml")
     return soup
+
+def update_key_and_event_list(event):
+	event.key = event.name.lower(), event.start_date.year
+	if event.key not in keys_from_spreadsheet:
+		event_list.append(event)
+	return event.key, event_list
 
 def scrape_swing_planit(keys_from_spreadsheet):
 	soup = get_soup(URL_SP)
@@ -73,18 +79,11 @@ def scrape_swing_planit(keys_from_spreadsheet):
 						if li_text.split(splitter,1)[0].lower() == 'styles':
 							event.dance_styles = li_text.split(splitter,1)[1].lower().strip()
 							# event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
-			
-			# Check for old events
-			# same_name_event_keys = [item for item in a if event.name.lower() in item]
-			# same_name_event_years = [int(i[2]) for i in same_name_event_keys]
-			# if 
-			# key_names_from_spreadsheet = [int(i[0]) for i in keys_from_spreadsheet]
-			# if event.name.lower() in key_names_from_spreadsheet:
-
-
-			key = event.name.lower(), event.start_date.year
-			if key not in keys_from_spreadsheet:
-				event_list.append(event)
+			event.key, event_list = update_key_and_event_list(event)
+			# event.key = event.name.lower(), event.start_date.year
+			# if event.key not in keys_from_spreadsheet:
+			# 	event_list.append(event)
+	pdb.set_trace()
 	return event_list
 
 def scrape_dance_cal(keys_from_spreadsheet):
@@ -134,9 +133,7 @@ def scrape_dance_cal(keys_from_spreadsheet):
 					event.details = span.text.strip()
 				if 'DCEventInfoBands' in span['class']:
 					event.bands = span.text.split(':')[1].strip()
-			key = event.name.lower(), event.start_date.year
-			if key not in keys_from_spreadsheet:
-				event_list.append(event)
+			event.key, event_list = update_key_and_event_list(event)
 		if event.name != None:
 			event_list.append(event)
 	return event_list
@@ -147,17 +144,19 @@ def event_info_to_googledoc():
 		print(event.name)
 		start = event.start_date.strftime('%m/%d/%Y')
 		end = event.end_date.strftime('%m/%d/%Y')
-		row = [event.name, start, end, event.city, event.state,
+		row = [event.key, event.name, start, end, event.city, event.state,
 			   event.country, event.dance_styles, event.status, event.url, 
-			   event.teachers, event.bands, event.details]
+			   event.teachers, event.bands, event.details, event.obsolete]
 		worksheet.insert_row(row, index=2)
 
 
-def defunct_replaced_events():
+def mark_obsolete_events():
 	"""Checks each entry in the google doc to see if there is a new version 
 	of that same event. If there is, it marks a "defunct" column as defunct"""
-	for key in keys_from_spreadsheet:
-		if key[0]
+
+	# Check for old events
+	# same_name_event_keys = [item for item in a if event.name.lower() in item]
+	# same_name_event_years = [int(i[2]) for i in same_name_event_keys]
 	pass
 
 
@@ -178,11 +177,3 @@ scrape_dance_cal()
 
 # Once done scraping, this will take all the new rows and push them into the google doc.
 event_info_to_googledoc()
-
-
-
-
-# for row_number, row  in enumerate(utils.iter_worksheeet(spreadsheet, 'sheet1', header_row = ??)):
-	# key = row['name'], row['start']
-	# unique[key] = row_number
-
