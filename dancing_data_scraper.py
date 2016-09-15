@@ -49,7 +49,7 @@ def update_key_and_event_list(event):
 
 def scrape_swing_planit(keys_from_spreadsheet):
 	soup = get_soup(URL_SP)
-	for event_list_item in soup.findAll('li', {'class' : 'color-shape'})[0:5]:
+	for event_list_item in soup.findAll('li', {'class' : 'color-shape'}):
 		for a_tag in event_list_item.findAll('a', href=True):
 			event_soup = get_soup(a_tag['href'])
 			event = Event()
@@ -80,15 +80,11 @@ def scrape_swing_planit(keys_from_spreadsheet):
 							event.dance_styles = li_text.split(splitter,1)[1].lower().strip()
 							# event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
 			event.key, event_list = update_key_and_event_list(event)
-			# event.key = event.name.lower(), event.start_date.year
-			# if event.key not in keys_from_spreadsheet:
-			# 	event_list.append(event)
-	pdb.set_trace()
 	return event_list
 
 def scrape_dance_cal(keys_from_spreadsheet):
 	soup = get_soup(URL_DC)
-	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:1]:
+	for event_div in soup.findAll('div', {'class' : 'DCListEvent'}):
 		name = None
 		event = Event()
 		for span in event_div.findAll('span'):
@@ -99,8 +95,6 @@ def scrape_dance_cal(keys_from_spreadsheet):
 				# checks to see if the event name already exists in the instance list
 				# If it does, it skips it
 				continue
-				# TKTK add state and bands to the instances
-				# these items are listed in the dancecal website, and not on swingplanit
 			else:
 				# This means the event does not already exist in the instance list
 				# and will be added
