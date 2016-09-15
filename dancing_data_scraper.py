@@ -28,20 +28,27 @@ gc = gspread.authorize(credentials)
 spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV8QaWJg9OYzaaYSvCBrmT50vrDN84cJzA0/edit#gid=0")
 worksheet = spreadsheet.worksheet('Sheet1')
 
+def pull_googledoc_keys():
+	keys_from_spreadsheet = []
+	for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
+		key = row['name'].lower(), parse(row['start date']).year
+		keys_from_spreadsheet.append(key)
+	return keys_from_spreadsheet
+
 def get_soup(url):
     """Download and convert to BeautifulSoup."""
     response = requests.get(url)
     soup = bs4.BeautifulSoup(response.text, "lxml")
     return soup
 
-def scrape_swing_planit():
+def scrape_swing_planit(keys_from_spreadsheet):
 	soup = get_soup(URL_SP)
-	for event_list_item in soup.findAll('li', {'class' : 'color-shape'}):
+	for event_list_item in soup.findAll('li', {'class' : 'color-shape'})[0:5]:
 		for a_tag in event_list_item.findAll('a', href=True):
 			event_soup = get_soup(a_tag['href'])
 			event = Event()
 			event.name = event_soup.title.text
-			event_name_list.append(event.name)
+			event_name_list.append(event.name.lower())
 			event.details = event_soup.findAll('p')[0].text
 			event.teachers = event_soup.findAll('p')[2].text
 			# event.teachers = event_soup.findAll('p')[2].text.split(', ')
@@ -66,10 +73,21 @@ def scrape_swing_planit():
 						if li_text.split(splitter,1)[0].lower() == 'styles':
 							event.dance_styles = li_text.split(splitter,1)[1].lower().strip()
 							# event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
-			event_list.append(event)
+			
+			# Check for old events
+			# same_name_event_keys = [item for item in a if event.name.lower() in item]
+			# same_name_event_years = [int(i[2]) for i in same_name_event_keys]
+			# if 
+			# key_names_from_spreadsheet = [int(i[0]) for i in keys_from_spreadsheet]
+			# if event.name.lower() in key_names_from_spreadsheet:
+
+
+			key = event.name.lower(), event.start_date.year
+			if key not in keys_from_spreadsheet:
+				event_list.append(event)
 	return event_list
 
-def scrape_dance_cal():
+def scrape_dance_cal(keys_from_spreadsheet):
 	soup = get_soup(URL_DC)
 	for event_div in soup.findAll('div', {'class' : 'DCListEvent'})[0:1]:
 		name = None
@@ -78,7 +96,7 @@ def scrape_dance_cal():
 
 			if 'DCListName' in span['class']:
 				name = span.text.strip()
-			if name in event_name_list:
+			if name.lower() in event_name_list:
 				# checks to see if the event name already exists in the instance list
 				# If it does, it skips it
 				continue
@@ -116,31 +134,13 @@ def scrape_dance_cal():
 					event.details = span.text.strip()
 				if 'DCEventInfoBands' in span['class']:
 					event.bands = span.text.split(':')[1].strip()
+			key = event.name.lower(), event.start_date.year
+			if key not in keys_from_spreadsheet:
+				event_list.append(event)
 		if event.name != None:
 			event_list.append(event)
 	return event_list
 				# print('Name: {}, Location: {}, {}, Dances: {}, Dates: {}'.format(event.name, event.city, event.country, event.dance_styles, event.start_date))
-
-def all_event_info_to_csv():
-	headers = ['name', 'start date', 'end date', 'city', 'state', 'country', 'dance_styles', 'url', 'details', 'teachers', 'bands', 'status']
-
-	with open('scraped_event_info.csv', 'w') as f:
-		writer = csv.writer(f)
-		writer.writerow(headers)
-		for event in event_list:
-			start = event.start_date.strftime('%m/%d/%Y')
-			end = event.end_date.strftime('%m/%d/%Y')
-			row = [event.name.encode('latin-1'), start, end, event.city, event.state,
-				   event.country, event.dance_styles, event.url, event.details, 
-				   event.teachers, event.bands, event.status]
-			writer.writerow(row)
-
-def event_names_to_csv():
-	with open('change_name_before_editing.csv', 'w') as f:
-		writer = csv.writer(f)
-		writer.writerow(['event'])
-		for event in event_list:
-			writer.writerow([event.name])
 
 def event_info_to_googledoc():
 	for event in event_list:
@@ -152,47 +152,35 @@ def event_info_to_googledoc():
 			   event.teachers, event.bands, event.details]
 		worksheet.insert_row(row, index=2)
 
-def pull_googledoc_info():
-	keys = []
-	for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
-		pdb.set_trace()
-		key = row['name'].lower(), parse(row['start date']).year
-		keys.append(key)
-	return keys
-			
 
+def defunct_replaced_events():
+	"""Checks each entry in the google doc to see if there is a new version 
+	of that same event. If there is, it marks a "defunct" column as defunct"""
+	for key in keys_from_spreadsheet:
+		if key[0]
+	pass
+
+
+			
+# pulls the "keys" from the google spreadsheet
+# The key for each row is the name of the event and the year
+# Example: (orient lindy express, 2016)
+# These keys are used to prevent duplication in spreadsheet
+keys_from_spreadsheet = pull_googledoc_keys()
 
 
 # Scrape from swingplanit.com
-# scrape_swing_planit()
+scrape_swing_planit(keys_from_spreadsheet)
 
 
 # scrape from dancecal.com
-# scrape_dance_cal()
+scrape_dance_cal()
 
-# all_event_info_to_csv()
-#
-# event_names_to_csv()
-
-# event_info_to_googledoc()
-
-pull_googledoc_info()
+# Once done scraping, this will take all the new rows and push them into the google doc.
+event_info_to_googledoc()
 
 
 
-
-
-
-
-
-
-# TKTK Swingala (with accent over i) does not print correctly in csv. 
-# Is it just the csv, or is it also messed up within instance?
-
-# TKTK lowercase all event names when comparing
-
-# Name and year to index of row
-# when needing to replace
 
 # for row_number, row  in enumerate(utils.iter_worksheeet(spreadsheet, 'sheet1', header_row = ??)):
 	# key = row['name'], row['start']
