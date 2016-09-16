@@ -29,6 +29,7 @@ spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV
 worksheet = spreadsheet.worksheet('Sheet1')
 
 def pull_googledoc_keys():
+	"""Pulls all the values from the keys collumn of the google doc"""
 	keys_from_spreadsheet = []
 	for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
 		# key = row['name'].lower(), parse(row['start date']).year
@@ -41,13 +42,24 @@ def get_soup(url):
     soup = bs4.BeautifulSoup(response.text, "lxml")
     return soup
 
-def update_key_and_event_list(event):
+def create_key(event):
+	"""Creates the key for each event passed through"""
 	event.key = event.name.lower(), event.start_date.year
-	if event.key not in keys_from_spreadsheet:
+	return event.key
+
+def append_to_event_list(event, event_key, keys_from_spreadsheet):
+	"""Checks to see if event key is already in the spreadsheet. If it's not, 
+	the event is added to the sheet. If it is, it is skipped"""
+	if str(event.key) not in keys_from_spreadsheet:
 		event_list.append(event)
-	return event.key, event_list
+	return event_list
+
+
 
 def scrape_swing_planit(keys_from_spreadsheet):
+	"""Scrapes swingplanit.com. and returns an event instance
+	that includes name, start date, end date, country, city, url,
+	dance styles, teachers, status, key, and an obsolete value"""
 	soup = get_soup(URL_SP)
 	for event_list_item in soup.findAll('li', {'class' : 'color-shape'}):
 		for a_tag in event_list_item.findAll('a', href=True):
@@ -79,10 +91,17 @@ def scrape_swing_planit(keys_from_spreadsheet):
 						if li_text.split(splitter,1)[0].lower() == 'styles':
 							event.dance_styles = li_text.split(splitter,1)[1].lower().strip()
 							# event.dance_styles = li_text.split(splitter,1)[1].lower().strip().split(',')
-			event.key, event_list = update_key_and_event_list(event)
+		event.key = create_key(event)
+		event_list = append_to_event_list(event, event.key, keys_from_spreadsheet)
+		# # pdb.set_trace()
+		# if str(event.key) not in keys_from_spreadsheet:
+		# 	event_list.append(event)
 	return event_list
 
 def scrape_dance_cal(keys_from_spreadsheet):
+	"""Scrapes dancecal.com. and returns an event instance
+	that includes name, start date, end date, country, city, url,
+	dance styles, teachers, status, key, and an obsolete value"""
 	soup = get_soup(URL_DC)
 	for event_div in soup.findAll('div', {'class' : 'DCListEvent'}):
 		name = None
@@ -130,13 +149,17 @@ def scrape_dance_cal(keys_from_spreadsheet):
 					event.details = span.text.strip()
 				if 'DCEventInfoBands' in span['class']:
 					event.bands = span.text.split(':')[1].strip()
-		event.key, event_list = update_key_and_event_list(event)
-		if event.name != None:
-			event_list.append(event)
+		if event.name == None:
+			pass
+		else:
+			event.key = create_key(event)
+			event_list = append_to_event_list(event, event.key, keys_from_spreadsheet)
 	return event_list
 				# print('Name: {}, Location: {}, {}, Dances: {}, Dates: {}'.format(event.name, event.city, event.country, event.dance_styles, event.start_date))
 
 def event_info_to_googledoc():
+	"""takes all the events from the event lists and pastes them 
+	into the correct rows of the google spreadsheet"""
 	for event in event_list:
 		print(event.name)
 		start = event.start_date.strftime('%m/%d/%Y')
