@@ -10,7 +10,7 @@ start = 'ORD'
 # destinations = ['New York, NY', 'St. Louis, Missouri', 'Stockholm, Sweden', 
 # 	   'Ann Arbor, MI', 'Minneapolis, MN']
 # destinations = ['Chicago, IL']
-destinations = ['NYC', 'STL', 'ARN', 'ARB','MSP']
+destinations = ['NYC', 'STL', 'ARN', 'DTW','MSP']
 gas_price = 2.24 #average gas price in Illinois 
 mpg = 23.6 #average miles per gallon for cars and light trucks
 km_in_mile = 1.609344
@@ -60,6 +60,11 @@ for destination in destinations:
 		        "origin": start,
 		        "destination": destination,
 		        "date": "2016-11-19"
+		      },
+		      {
+		      	"origin": destination,
+		      	"destination": start, 
+		      	"date": "2016-11-25"
 		      }
 		    ],
 		    "passengers": {

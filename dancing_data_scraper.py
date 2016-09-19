@@ -54,8 +54,6 @@ def append_to_event_list(event, event_key, keys_from_spreadsheet):
 		event_list.append(event)
 	return event_list
 
-
-
 def scrape_swing_planit(keys_from_spreadsheet):
 	"""Scrapes swingplanit.com. and returns an event instance
 	that includes name, start date, end date, country, city, url,
@@ -179,6 +177,11 @@ def mark_obsolete_events():
 	# same_name_event_years = [int(i[2]) for i in same_name_event_keys]
 	pass
 
+def mark_past_events():
+	"""Checks the spreadsheet for past events. If the events are past,
+	this function will change the "status" column to from "upcoming" to "past". """
+	pass
+
 
 			
 # pulls the "keys" from the google spreadsheet
@@ -188,7 +191,7 @@ def mark_obsolete_events():
 keys_from_spreadsheet = pull_googledoc_keys()
 
 # Scrape from swingplanit.com
-scrape_swing_planit(keys_from_spreadsheet)
+# scrape_swing_planit(keys_from_spreadsheet)
 
 # scrape from dancecal.com
 scrape_dance_cal(keys_from_spreadsheet)
