@@ -73,4 +73,11 @@ for destination in destinations:
 		response = requests.post(url, data=json.dumps(params), headers=headers)
 		data = response.json()
 
-	pdb.set_trace()
+		price_string = data['trips']['tripOption'][0]['saleTotal']
+		price_split = re.split('(\d+)', price_string)
+		price = price_split[1]
+		currency = price_split[0]
+		print(destination + ', $' + str(price))
+
+
+pdb.set_trace()
