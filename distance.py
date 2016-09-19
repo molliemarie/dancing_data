@@ -5,6 +5,11 @@ import json
 import requests
 import re
 
+# TKTK:
+# 1) Need a way to get the airport code for the closest airport if given
+# a city and country. Build that in.
+# 2) feed in real data from google spreadsheets
+
 # start = 'Chicago, IL'
 start = 'ORD'
 # destinations = ['New York, NY', 'St. Louis, Missouri', 'Stockholm, Sweden', 
@@ -46,12 +51,10 @@ for destination in destinations:
 		elif len(time) == 2:
 			dt_seconds = datetime.timedelta(hours=int(time[0]), minutes=int(time[1])).seconds
 		print(destination + ': '+ dur + ', $' + str(price_drive))
-	# pdb.set_trace()
 	if dt_seconds < 18000: 
 		#less than 18000 seconds, or five hours
 		price = price_drive
 	else:
-		price = 0
 		# get airline price
 		params = {
 		  "request": {
