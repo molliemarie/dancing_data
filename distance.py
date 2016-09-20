@@ -4,18 +4,32 @@ import pdb
 import json
 import requests
 import re
+import utils
+from oauth2client.service_account import ServiceAccountCredentials
+import gspread
+from dateutil.parser import parse
+from GeoBases import GeoBase
+
+geo_a = GeoBase(data='airports', verbose=False)
+
+
+# Set up gspread
+scope = ['https://spreadsheets.google.com/feeds']
+credentials = ServiceAccountCredentials.from_json_keyfile_name('/Users/mollie/Dropbox (Datascope Analytics)/dancing_data/drive_key.json', scope)
+gc = gspread.authorize(credentials)
+spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV8QaWJg9OYzaaYSvCBrmT50vrDN84cJzA0/edit#gid=0")
+worksheet = spreadsheet.worksheet('Sheet1')
 
 # TKTK:
 # 1) Need a way to get the airport code for the closest airport if given
 # a city and country. Build that in.
 # 2) feed in real data from google spreadsheets
 
-# start = 'Chicago, IL'
-start = 'ORD'
+start_airports = ['MWD', 'ORD']# start = 'ORD'
 # destinations = ['New York, NY', 'St. Louis, Missouri', 'Stockholm, Sweden', 
 # 	   'Ann Arbor, MI', 'Minneapolis, MN']
 # destinations = ['Chicago, IL']
-destinations = ['NYC', 'STL', 'ARN', 'DTW','MSP']
+# destinations = ['NYC', 'STL', 'ARN', 'DTW','MSP']
 gas_price = 2.24 #average gas price in Illinois 
 mpg = 23.6 #average miles per gallon for cars and light trucks
 km_in_mile = 1.609344
@@ -29,7 +43,19 @@ gmaps = googlemaps.Client(key='AIzaSyAKHDuZsqZRAwxP9BqVCw-VmMTbeaoSoso')
 
 # geocode_result = gmaps.geocode('Chicago, IL')
 
-for destination in destinations:
+for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
+	start_date = (parse(row['start date'])).strftime('%Y-%m-%d')
+	end_date = (parse(row['end date'])).strftime('%Y-%m-%d')
+	destination = row['city'] + ', ' + row['country']
+	geocode = gmaps.geocode(destination)
+	lat = geocode[0]['geometry']['bounds']['southwest']['lat']
+	lng = geocode[0]['geometry']['bounds']['southwest']['lng']
+	destination_airports = [k for _, k in sorted(geo_a.findNearPoint((lat, lng), 40))]
+
+	# loop through all airports retrieved in order to get the cheapest cost
+
+	pdb.set_trace()
+
 	# if destination == start:
 	# 	# if destination city is same as start city
 	# 	price = 0
