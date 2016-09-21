@@ -10,8 +10,21 @@ import gspread
 from dateutil.parser import parse
 from GeoBases import GeoBase
 
-geo_a = GeoBase(data='airports', verbose=False)
+# TKTK if it's a past event, assume it will happen 
+# around the same weekend the following year and make a new event
 
+START_AIRPORT = 'ORD'
+# Could edit to take into consideration both airports:
+# START_AIRPORTs = ['ORD', 'MDW'] 
+START_CITY = "Chicago, IL"
+DRIVING_LIMIT = 18000 #five hours
+
+GAS_PRICE = 2.24 #average gas price in Illinois 
+MPG = 23.6 #average miles per gallon for cars and light trucks
+KM_IN_MILE = 1.609344
+
+# set up geobase to grab near airports
+geo_a = GeoBase(data='airports', verbose=False)
 
 # Set up gspread
 scope = ['https://spreadsheets.google.com/feeds']
@@ -20,92 +33,80 @@ gc = gspread.authorize(credentials)
 spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV8QaWJg9OYzaaYSvCBrmT50vrDN84cJzA0/edit#gid=0")
 worksheet = spreadsheet.worksheet('Sheet1')
 
-# TKTK:
-# 1) Need a way to get the airport code for the closest airport if given
-# a city and country. Build that in.
-# 2) feed in real data from google spreadsheets
-
-start_airport = 'ORD'# start = 'ORD'
-start_city = "Chicago, IL"
-DRIVING_LIMIT = 18000
-# destinations = ['New York, NY', 'St. Louis, Missouri', 'Stockholm, Sweden', 
-# 	   'Ann Arbor, MI', 'Minneapolis, MN']
-# destinations = ['Chicago, IL']
-# destinations = ['NYC', 'STL', 'ARN', 'DTW','MSP']
-gas_price = 2.24 #average gas price in Illinois 
-mpg = 23.6 #average miles per gallon for cars and light trucks
-km_in_mile = 1.609344
-
+# Google flights stuff
 api_key = "AIzaSyAKHDuZsqZRAwxP9BqVCw-VmMTbeaoSoso"
 url = "https://www.googleapis.com/qpxExpress/v1/trips/search?key=" + api_key
 headers = {'content-type': 'application/json'}
 
-
+# googlemaps wrapper
 gmaps = googlemaps.Client(key='AIzaSyAKHDuZsqZRAwxP9BqVCw-VmMTbeaoSoso')
 
-# geocode_result = gmaps.geocode('Chicago, IL')
-
+# Loop through each row in the google spreadsheet
 for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
-	status = row['status']
+	status = row['status'] 
 	if status == 'past':
+		# skips row if the event has already happened
 		continue
 	else:
 		start_date = (parse(row['start date'])).strftime('%Y-%m-%d')
 		end_date = (parse(row['end date'])).strftime('%Y-%m-%d')
 		destination = row['city'] + ', ' + row['country']
+		# retrieve lat/long of destination
 		geocode = gmaps.geocode(destination)
 		lat = geocode[0]['geometry']['bounds']['southwest']['lat']
 		lng = geocode[0]['geometry']['bounds']['southwest']['lng']
+		# get list of airports within 40 km of destination
 		destination_airports = [k for _, k in sorted(geo_a.findNearPoint((lat, lng), 40))]
 
-		# loop through all airports retrieved in order to get the cheapest cost
-
-		# pdb.set_trace()
-
-		# if destination == start:
-		# 	# if destination city is same as start city
-		# 	price = 0
-		# else:
-		distance = gmaps.distance_matrix(start_city, destination)
+		# Find distance and duration of trip to destination city
+		distance = gmaps.distance_matrix(START_CITY, destination)
 		if distance['rows'][0]['elements'][0]['status'] == 'ZERO_RESULTS':
 			# this means the destination is not driveable
-			print(destination + ': not driveable')
 			dt_seconds = DRIVING_LIMIT + 1
 		else:
 			dur = distance['rows'][0]['elements'][0]['duration']['text']
 			dist = distance['rows'][0]['elements'][0]['distance']['text'][0:-3]
 			if dist == '':
 				continue
-			dist_int = int(dist.replace(',', ''))
-			price_drive = round(((dist_int * gas_price) / (mpg * km_in_mile)), 2)
+				# just in case it's given the exact same lat long for 
+				# start location and destination
+			dist_int = int(dist.replace(',', '')) #remove comma from number and make int
+			# calculate driving cost
+			price_drive = round(((dist_int * GAS_PRICE) / (MPG * KM_IN_MILE)), 2)
 			if 'day' in dur:
+				# driving duration over a day, so not driveable
 				dt_seconds = DRIVING_LIMIT + 1
 			else:
+				# time listed in format like "3 hours 25 minutes". Following code breaks that up
 				time = dur.replace(' hours ', ':').replace('hour', ':').replace(' mins', '').replace(' min', '').split(':')
-				# pdb.set_trace()
 				if len(time) == 1:
 					dt_seconds = datetime.timedelta(minutes=int(time[0])).seconds
 				elif len(time) == 2:
 					dt_seconds = datetime.timedelta(hours=int(time[0]), minutes=int(time[1])).seconds
-				print(destination + ': '+ dur + ', $' + str(price_drive))
 		if dt_seconds < DRIVING_LIMIT: 
-			#less than 18000 seconds, or five hours
+			# if the driving time is within driving limit...
 			price = price_drive
+			print(destination + ', $' + str(price))
+			driveable = 1
 		else:
+			# not within driving limit...
+			driveable = 0
 			price = 9999
-			for airport2 in destination_airports:
-			# get airline price
+			for airport2 in destination_airports: 
+			#loops through each airport near the destination
+			# finds roundtrip price for each set of start_airport and destination_airport
+			# set price as smallest price
 				params = {
 				  "request": {
 				    "slice": [
 				      {
-				        "origin": start_airport,
+				        "origin": START_AIRPORT,
 				        "destination": airport2,
 				        "date": start_date
 				      },
 				      {
 				      	"origin": airport2,
-				      	"destination": start_airport, 
+				      	"destination": START_AIRPORT, 
 				      	"date": end_date
 				      }
 				    ],
@@ -127,9 +128,9 @@ for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', he
 					if price_test < price:
 						price = price_test
 				except KeyError:
+					# KeyError happens if there are no flights from that airport
 					continue
 
 			print(destination + ', $' + str(price))
-
-
-		# pdb.set_trace()
+			
+			pdb.set_trace()
