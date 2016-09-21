@@ -41,6 +41,8 @@ headers = {'content-type': 'application/json'}
 # googlemaps wrapper
 gmaps = googlemaps.Client(key='AIzaSyAKHDuZsqZRAwxP9BqVCw-VmMTbeaoSoso')
 
+flight_cushion = gap = datetime.timedelta(days = 1)
+
 # Loop through each row in the google spreadsheet
 for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
 	status = row['status'] 
@@ -50,6 +52,10 @@ for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', he
 	else:
 		start_date = (parse(row['start date'])).strftime('%Y-%m-%d')
 		end_date = (parse(row['end date'])).strftime('%Y-%m-%d')
+		start_date_with_cushion = ((parse(row['start date']))-flight_cushion).strftime('%Y-%m-%d')
+		end_date_with_cushion = ((parse(row['end date']))+flight_cushion).strftime('%Y-%m-%d')
+		departure_dates = [start_date, start_date_with_cushion]
+		return_dates = [end_date, end_date_with_cushion]
 		destination = row['city'] + ', ' + row['country']
 		# retrieve lat/long of destination
 		geocode = gmaps.geocode(destination)
@@ -86,51 +92,53 @@ for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', he
 		if dt_seconds < DRIVING_LIMIT: 
 			# if the driving time is within driving limit...
 			price = price_drive
-			print(destination + ', $' + str(price))
+			print(destination + ', $' + str(price) + ', driving')
 			driveable = 1
 		else:
 			# not within driving limit...
 			driveable = 0
 			price = 9999
 			for airport2 in destination_airports: 
-			#loops through each airport near the destination
-			# finds roundtrip price for each set of start_airport and destination_airport
-			# set price as smallest price
-				params = {
-				  "request": {
-				    "slice": [
-				      {
-				        "origin": START_AIRPORT,
-				        "destination": airport2,
-				        "date": start_date
-				      },
-				      {
-				      	"origin": airport2,
-				      	"destination": START_AIRPORT, 
-				      	"date": end_date
-				      }
-				    ],
-				    "passengers": {
-				      "adultCount": 1
-				    },
-				    "solutions": 1,
-				    "refundable": False
-				  }
-				}
+				for departure_date in departure_dates:
+					for return_date in return_dates:
+					#loops through each airport near the destination
+					# finds roundtrip price for each set of start_airport and destination_airport
+					# set price as smallest price
+						params = {
+						  "request": {
+						    "slice": [
+						      {
+						        "origin": START_AIRPORT,
+						        "destination": airport2,
+						        "date": departure_date
+						      },
+						      {
+						      	"origin": airport2,
+						      	"destination": START_AIRPORT, 
+						      	"date": return_date
+						      }
+						    ],
+						    "passengers": {
+						      "adultCount": 1
+						    },
+						    "solutions": 1,
+						    "refundable": False
+						  }
+						}
 
-				response = requests.post(url, data=json.dumps(params), headers=headers)
-				data = response.json()
-				try:
-					price_string = data['trips']['tripOption'][0]['saleTotal']
-					price_split = re.split('(\d+)', price_string)
-					price_test = int(price_split[1])
-					currency = price_split[0]
-					if price_test < price:
-						price = price_test
-				except KeyError:
-					# KeyError happens if there are no flights from that airport
-					continue
+						response = requests.post(url, data=json.dumps(params), headers=headers)
+						data = response.json()
+						try:
+							price_string = data['trips']['tripOption'][0]['saleTotal']
+							price_split = re.split('(\d+)', price_string)
+							price_test = int(price_split[1])
+							currency = price_split[0]
+							if price_test < price:
+								price = price_test
+						except KeyError:
+							# KeyError happens if there are no flights from that airport
+							continue
 
 			print(destination + ', $' + str(price))
-			
-			pdb.set_trace()
+
+			# pdb.set_trace()
