@@ -9,6 +9,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from dateutil.parser import parse
 from GeoBases import GeoBase
+import config
 
 # TKTK if it's a past event, assume it will happen 
 # around the same weekend the following year and make a new event
@@ -34,17 +35,17 @@ spreadsheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1dDE72PW8HV
 worksheet = spreadsheet.worksheet('Sheet1')
 
 # Google flights stuff
-api_key = "AIzaSyAKHDuZsqZRAwxP9BqVCw-VmMTbeaoSoso"
+api_key = config.key
 url = "https://www.googleapis.com/qpxExpress/v1/trips/search?key=" + api_key
 headers = {'content-type': 'application/json'}
 
 # googlemaps wrapper
-gmaps = googlemaps.Client(key='AIzaSyAKHDuZsqZRAwxP9BqVCw-VmMTbeaoSoso')
+gmaps = googlemaps.Client(key=config.key)
 
 flight_cushion = gap = datetime.timedelta(days = 1)
 
 # Loop through each row in the google spreadsheet
-for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
+for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet4', header_row = 1)):
 	status = row['status'] 
 	if status == 'past':
 		# skips row if the event has already happened
