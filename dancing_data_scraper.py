@@ -54,6 +54,8 @@ def append_to_event_list(event, event_key, keys_from_spreadsheet):
 		event_list.append(event)
 	return event_list
 
+
+
 def scrape_swing_planit(keys_from_spreadsheet):
 	"""Scrapes swingplanit.com. and returns an event instance
 	that includes name, start date, end date, country, city, url,
@@ -191,7 +193,7 @@ def mark_past_events():
 keys_from_spreadsheet = pull_googledoc_keys()
 
 # Scrape from swingplanit.com
-# scrape_swing_planit(keys_from_spreadsheet)
+scrape_swing_planit(keys_from_spreadsheet)
 
 # scrape from dancecal.com
 scrape_dance_cal(keys_from_spreadsheet)
