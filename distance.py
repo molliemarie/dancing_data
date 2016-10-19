@@ -18,13 +18,14 @@ START_AIRPORT = 'ORD'
 # Could edit to take into consideration both airports:
 # START_AIRPORTs = ['ORD', 'MDW'] 
 START_CITY = "Chicago, IL"
-DRIVING_LIMIT = 18000 #five hours
+DAY_HOURS = 24 #hours in a day
 
 GAS_PRICE = 2.24 #average gas price in Illinois 
 MPG = 23.6 #average miles per gallon for cars and light trucks
 KM_IN_MILE = 1.609344
 
-COLUMN = '15'
+DIST_COLUMN = '15'
+DRIVING_TIME_COLUMN = '16'
 
 # set up geobase to grab near airports
 geo_a = GeoBase(data='airports', verbose=False)
@@ -51,6 +52,44 @@ flight_cushion = gap = datetime.timedelta(days = 1)
 # 	worksheet.update_cell(str(row_number+2), COLUMN, 'test1')
 	# pdb.set_trace()
 
+def find_distance_and_driving_duration(row_number, row):
+	# retrieve lat/long of destination
+	geocode = gmaps.geocode(destination)
+	lat = geocode[0]['geometry']['bounds']['southwest']['lat']
+	lng = geocode[0]['geometry']['bounds']['southwest']['lng']
+	# get list of airports within 40 km of destination
+	destination_airports = [k for _, k in sorted(geo_a.findNearPoint((lat, lng), 100))]
+
+	# Find distance and duration of trip to destination city
+	distance = gmaps.distance_matrix(START_CITY, destination)
+	if distance['rows'][0]['elements'][0]['status'] == 'ZERO_RESULTS':
+		worksheet.update_cell(str(row_number+2), DIST_COLUMN, 'Nan')
+		# this means the destination is not driveable
+		dt_hours = DAY_HOURS
+	else:
+		# pdb.set_trace()
+		dur = distance['rows'][0]['elements'][0]['duration']['text']
+		dist = distance['rows'][0]['elements'][0]['distance']['text'][0:-3]
+
+		dist_int = int(dist.replace(',', '')) #remove comma from number and make int
+		worksheet.update_cell(str(row_number+2), DIST_COLUMN, str(dist_int))
+		dt_hours = 0
+
+		# calculate driving cost
+		price_drive = round(((dist_int * GAS_PRICE) / (MPG * KM_IN_MILE)), 2)
+		if 'day' in dur:
+			# driving duration over a day, so not driveable
+			dt_hours = DAY_HOURS
+		else:
+			# time listed in format like "3 hours 25 minutes". Following code breaks that up
+			time = dur.replace(' hours ', ':').replace('hour', ':').replace(' mins', '').replace(' min', '').split(':')
+			if len(time) == 1:
+				dt_hours = datetime.timedelta(minutes=int(time[0])).hours
+			elif len(time) == 2:
+				dt_hours = datetime.timedelta(hours=int(time[0]), minutes=int(time[1])).hours
+		worksheet.update_cell(str(row_number+2), DRIVING_TIME_COLUMN, str(dt_hours))
+		pdb.set_trace()
+	return dur, dist_int, price_drive, dt_hours
 
 
 
@@ -64,41 +103,12 @@ for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', he
 		departure_dates = [start_date, start_date_with_cushion]
 		return_dates = [end_date, end_date_with_cushion]
 		destination = row['city'] + ', ' + row['country']
-		# retrieve lat/long of destination
-		geocode = gmaps.geocode(destination)
-		lat = geocode[0]['geometry']['bounds']['southwest']['lat']
-		lng = geocode[0]['geometry']['bounds']['southwest']['lng']
-		# get list of airports within 40 km of destination
-		destination_airports = [k for _, k in sorted(geo_a.findNearPoint((lat, lng), 100))]
 
-		# Find distance and duration of trip to destination city
-		distance = gmaps.distance_matrix(START_CITY, destination)
-		if distance['rows'][0]['elements'][0]['status'] == 'ZERO_RESULTS':
-			worksheet.update_cell(str(row_number+2), COLUMN, 'not driveable')
-			# this means the destination is not driveable
-			dt_seconds = DRIVING_LIMIT + 1
-		else:
-			# pdb.set_trace()
-			dur = distance['rows'][0]['elements'][0]['duration']['text']
-			dist = distance['rows'][0]['elements'][0]['distance']['text'][0:-3]
+		dur, dist_int, price_drive, dt_hours = find_distance_and_driving_duration(row_number, row)
+		pdb.set_trace()
 
-			dist_int = int(dist.replace(',', '')) #remove comma from number and make int
-			worksheet.update_cell(str(row_number+2), COLUMN, str(dist_int))
-			pdb.set_trace()
-			# calculate driving cost
-			price_drive = round(((dist_int * GAS_PRICE) / (MPG * KM_IN_MILE)), 2)
-			if 'day' in dur:
-				# driving duration over a day, so not driveable
-				dt_seconds = DRIVING_LIMIT + 1
-			else:
-				# time listed in format like "3 hours 25 minutes". Following code breaks that up
-				time = dur.replace(' hours ', ':').replace('hour', ':').replace(' mins', '').replace(' min', '').split(':')
-				if len(time) == 1:
-					dt_seconds = datetime.timedelta(minutes=int(time[0])).seconds
-				elif len(time) == 2:
-					dt_seconds = datetime.timedelta(hours=int(time[0]), minutes=int(time[1])).seconds
 		print('TOO FAR')
-		if dt_seconds < DRIVING_LIMIT: 
+		if dt_hours < DRIVING_LIMIT: 
 			# if the driving time is within driving limit...
 			price = price_drive
 			print(destination + ', $' + str(price) + ', driving')
