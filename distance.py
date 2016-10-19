@@ -24,6 +24,8 @@ GAS_PRICE = 2.24 #average gas price in Illinois
 MPG = 23.6 #average miles per gallon for cars and light trucks
 KM_IN_MILE = 1.609344
 
+COLUMN = '15'
+
 # set up geobase to grab near airports
 geo_a = GeoBase(data='airports', verbose=False)
 
@@ -45,12 +47,16 @@ gmaps = googlemaps.Client(key=config.key)
 flight_cushion = gap = datetime.timedelta(days = 1)
 
 # Loop through each row in the google spreadsheet
-for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet4', header_row = 1)):
+# for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet5', header_row = 1)):
+# 	worksheet.update_cell(str(row_number+2), COLUMN, 'test1')
+	# pdb.set_trace()
+
+
+
+
+for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
 	status = row['status'] 
-	if status == 'past':
-		# skips row if the event has already happened
-		continue
-	else:
+	if status != 'past':
 		start_date = (parse(row['start date'])).strftime('%Y-%m-%d')
 		end_date = (parse(row['end date'])).strftime('%Y-%m-%d')
 		start_date_with_cushion = ((parse(row['start date']))-flight_cushion).strftime('%Y-%m-%d')
@@ -63,21 +69,22 @@ for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet4', he
 		lat = geocode[0]['geometry']['bounds']['southwest']['lat']
 		lng = geocode[0]['geometry']['bounds']['southwest']['lng']
 		# get list of airports within 40 km of destination
-		destination_airports = [k for _, k in sorted(geo_a.findNearPoint((lat, lng), 40))]
+		destination_airports = [k for _, k in sorted(geo_a.findNearPoint((lat, lng), 100))]
 
 		# Find distance and duration of trip to destination city
 		distance = gmaps.distance_matrix(START_CITY, destination)
 		if distance['rows'][0]['elements'][0]['status'] == 'ZERO_RESULTS':
+			worksheet.update_cell(str(row_number+2), COLUMN, 'not driveable')
 			# this means the destination is not driveable
 			dt_seconds = DRIVING_LIMIT + 1
 		else:
+			# pdb.set_trace()
 			dur = distance['rows'][0]['elements'][0]['duration']['text']
 			dist = distance['rows'][0]['elements'][0]['distance']['text'][0:-3]
-			if dist == '':
-				continue
-				# just in case it's given the exact same lat long for 
-				# start location and destination
+
 			dist_int = int(dist.replace(',', '')) #remove comma from number and make int
+			worksheet.update_cell(str(row_number+2), COLUMN, str(dist_int))
+			pdb.set_trace()
 			# calculate driving cost
 			price_drive = round(((dist_int * GAS_PRICE) / (MPG * KM_IN_MILE)), 2)
 			if 'day' in dur:
@@ -90,6 +97,7 @@ for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet4', he
 					dt_seconds = datetime.timedelta(minutes=int(time[0])).seconds
 				elif len(time) == 2:
 					dt_seconds = datetime.timedelta(hours=int(time[0]), minutes=int(time[1])).seconds
+		print('TOO FAR')
 		if dt_seconds < DRIVING_LIMIT: 
 			# if the driving time is within driving limit...
 			price = price_drive
