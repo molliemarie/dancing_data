@@ -28,7 +28,19 @@ class Event(object):
 		self.flight_cost = flight_cost
 		self.event_type = event_type
 
+	def energy(self):
+		if self.workshop_cost + self.party_pass_cost == '':
+			cost = self.flight_cost + 100
+		elif workshop_cost != '':
+			cost = int(self.workshop_cost) + int(self.flight_cost)
+		else:
+			cost = int(self.party_pass) + int(self.flight_cost) 
+		energy = 1/cost
+
+		return energy
 
 
-		def __str__(self):
-			return 'Event: {}, dates: {}, location: {}, {}, dance styles: {}'.format(self.name, self.dates, self.city, self.country, self.dance_styles) 
+
+
+	def __str__(self):
+		return 'Event: {}, dates: {}, location: {}, {}, dance styles: {}'.format(self.name, self.dates, self.city, self.country, self.dance_styles) 
