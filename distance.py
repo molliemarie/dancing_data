@@ -18,6 +18,7 @@ START_AIRPORT = 'ORD'
 # Could edit to take into consideration both airports:
 # START_AIRPORTs = ['ORD', 'MDW'] 
 START_CITY = "Chicago, IL"
+START_CITY_ONLY = 'Chicago'
 DAY_SECONDS = 86400 #minutes in a day
 
 GAS_PRICE = 2.24 #average gas price in Illinois 
@@ -60,13 +61,14 @@ def find_distance_and_driving_duration(row_number, row):
 		lat = geocode[0]['geometry']['bounds']['southwest']['lat']
 		lng = geocode[0]['geometry']['bounds']['southwest']['lng']
 	except:
-		geocode[0]['geometry']['location']['lat']
-		geocode[0]['geometry']['location']['lng']
+		lat = geocode[0]['geometry']['location']['lat']
+		lng = geocode[0]['geometry']['location']['lng']
 	# get list of airports within 40 km of destination
 
 	# Find distance and duration of trip to destination city
 	distance = gmaps.distance_matrix(START_CITY, destination)
 	if distance['rows'][0]['elements'][0]['status'] == 'ZERO_RESULTS':
+		"""case where the destination is not driveable - overseas"""
 		worksheet.update_cell(str(row_number+2), DIST_COLUMN, 9999)
 		# this means the destination is not driveable
 		dt_seconds = DAY_SECONDS
@@ -74,7 +76,18 @@ def find_distance_and_driving_duration(row_number, row):
 		dist_int = 9999
 		price_drive = 9999
 		dt_seconds = 9999
+	elif row['city'] == START_CITY_ONLY:
+		"""case where destination is same as start city"""
+		dur = 0
+		dist_int = 0
+		price_drive = 0
+		dt_seconds = 0
+		flight_cost = 0
+		worksheet.update_cell(str(row_number+2), DRIVING_TIME_COLUMN, str(dt_seconds))
+		worksheet.update_cell(str(row_number+2), DIST_COLUMN, str(dist_int))
+		worksheet.update_cell(str(row_number+2), FLIGHT_COST_COLUMN, str(flight_cost))
 	else:
+		"""cases where destination is driveable"""
 		dur = distance['rows'][0]['elements'][0]['duration']['text']
 		dist = distance['rows'][0]['elements'][0]['distance']['text'][0:-3]
 
