@@ -109,6 +109,9 @@ def create_initial_random_set(event_list):
 
 def random_step(bool_state):
 
+	# TKTK - later make it so that it goes through various 
+	# sizes of groups
+
 	#Copy in_state to new_state
 	new_state = bool_state.copy()
 
@@ -149,16 +152,15 @@ def create_group(bool_state):
 
 def simulated_annealing(in_state):
 
-	in_group = create_group(in_state)
-	new_state = random_step(in_state)
-	new_group = create_group(new_state)
-	delta_energy = new_group.energy() - in_group.energy()
-	pdb.set_trace()
+	# estimate a good starting temperature by attempting a few non-stupid
+    # transitions and measuring the average change in temperature.
 
-	# for i, item in enumerate(bool_state):
-	# 	if item == True:
-	# 		group.events.append(event_list[i])
-	# 		group.event_names.append(event_list[i].name)
+	in_group = create_group(in_state)
+	delta_energies = []
+	while len(delta_energies) < 20:
+		new_state3gies.append(abs(new_group.energy() - in_group.energy()))
+	temperature = sum(delta_energies) / len(delta_energies)
+	pdb.set_trace()
 
 	# for i in range(MAX_ITER):
 	# 	new_state = random_step(bool_state)
