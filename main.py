@@ -16,7 +16,7 @@ xrates.base = 'USD'
 
 temp = 5000
 cooling_rate = 0.99
-max_iter = 1000
+MAX_ITER = 1000
 
 # TKTK Later make this so that it will pull exchange rates from API to get most updated rate
 # {'', 'EUR', 'HKS', 'CAD', 'MYR', 'CLP', 'US', 'USD', 'CAN', 'CHF', 'GBP', 'SEK', 'AUD'}
@@ -87,7 +87,7 @@ def create_event_list():
 			if row['currency'] == '':
 				event.currency = 'USD'
 			else:
-				events.currency = row['currency']
+				event.currency = row['currency']
 			if row['driving time'] == '':
 				event.driving_time = 99999
 			else: 
@@ -105,7 +105,7 @@ def create_initial_random_set(event_list):
 	return bool_state
 
 
-def random_step(in_state):
+def random_step(bool_state):
    new_state = []
    #Copy in_state to new_state
    for i in len(in_state):
@@ -114,13 +114,33 @@ def random_step(in_state):
    #Flip one boolean
    new_state[rand_index] = not new_state[rand_index] 
 
-# def simulated_annealing():
-# 	for i in range(max_iter):
-#     new_state = random_step(bool_state)
-#     energy_change = energy(new_state) - energy(bool_state)
-#     if energy_change < -random.random(temp):
-#         bool_state = new_state
-#     temp = temp * cooling_rate
+def simulated_annealing(bool_state):
+
+	group = Group()
+	for i, item in enumerate(bool_state):
+		if item == True:
+			group.events.append(event_list[i])
+			group.event_names.append(event_list[i].name)
+
+	pdb.set_trace()
+
+
+	# # estimate a good starting temperature by attempting a few non-stupid
+ #    # transitions and measuring the average change in temperature.
+ #    current_state.energy()  # <-- hack to make sure the copy_and_transition
+ #                            #     works correctly
+ #    delta_energies = []
+ #    while len(delta_energies) < 20:
+ #        new_state = current_state.copy_and_transition()
+ #        delta_energies.append(abs(new_state.energy() - current_state.energy()))
+ #    temperature = sum(delta_energies) / len(delta_energies)
+
+	# for i in range(MAX_ITER):
+ #    new_state = random_step(bool_state)
+ #    energy_change = energy(new_state) - energy(bool_state)
+ #    if energy_change < -random.random(temp):
+ #        bool_state = new_state
+ #    temp = temp * cooling_rate
 
 
 event_list = create_event_list()
@@ -128,7 +148,9 @@ event_list = create_event_list()
 # Create initial random bool set
 bool_state = create_initial_random_set(event_list)
 
-pdb.set_trace()
+simulated_annealing(bool_state)
+
+# pdb.set_trace()
 
 
 
