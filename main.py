@@ -15,9 +15,10 @@ import numpy as np
 xrates.install('money.exchange.SimpleBackend')
 xrates.base = 'USD'
 
-temp = 5000
-cooling_rate = 0.99
+TEMPERATURE = 5000
+COOLING_RATE = 0.99
 MAX_ITER = 1000
+MAX_EVENTS = 10
 
 # TKTK Later make this so that it will pull exchange rates from API to get most updated rate
 # {'', 'EUR', 'HKS', 'CAD', 'MYR', 'CLP', 'US', 'USD', 'CAN', 'CHF', 'GBP', 'SEK', 'AUD'}
@@ -99,7 +100,7 @@ def create_event_list():
 def create_initial_random_set(event_list):
 	bool_state = [False] * len(event_list)
 	count = 0
-	while count < 7:
+	while count < MAX_EVENTS:
 		rand_index = randrange(0, len(event_list))
 		bool_state[rand_index] = True
 		count += 1
@@ -109,14 +110,16 @@ def create_initial_random_set(event_list):
 def random_step(bool_state):
 
 	#Copy in_state to new_state
-   	new_state = bool_state.copy()
+	new_state = bool_state.copy()
 
-   	# Find true / false indices
+	# Find true / false indices
 	true_indices = []
 	false_indices = []
+	# print('OLD STATE')
 	for i, event in enumerate(bool_state):
 		if event == True:
 			true_indices.append(i)
+			# print(i)
 		else:
 			false_indices.append(i)
 
@@ -126,25 +129,42 @@ def random_step(bool_state):
 
 	for index in random_indices:
 		new_state[index] = not new_state[index]
-
-
+	# print('NEW STATE')
+	# for i, event in enumerate(new_state):
+	# 	if event == True:
+	# 		print(i)
+	return new_state
 
    # rand_index = randrange(0, len(in_state))
    # #Flip one boolean
    # new_state[rand_index] = not new_state[rand_index] 
 
-def simulated_annealing(bool_state):
-
+def create_group(bool_state):
 	group = Group()
 	for i, item in enumerate(bool_state):
 		if item == True:
 			group.events.append(event_list[i])
 			group.event_names.append(event_list[i].name)
+	return group
 
-	for i in range(MAX_ITER):
-		new_state = random_step(bool_state)
+def simulated_annealing(in_state):
 
+	in_group = create_group(in_state)
+	new_state = random_step(in_state)
+	new_group = create_group(new_state)
+	delta_energy = new_group.energy() - in_group.energy()
 	pdb.set_trace()
+
+	# for i, item in enumerate(bool_state):
+	# 	if item == True:
+	# 		group.events.append(event_list[i])
+	# 		group.event_names.append(event_list[i].name)
+
+	# for i in range(MAX_ITER):
+	# 	new_state = random_step(bool_state)
+	# 	energy_change = group.energy()
+
+	# pdb.set_trace()
 
 
 	# # estimate a good starting temperature by attempting a few non-stupid
@@ -157,12 +177,12 @@ def simulated_annealing(bool_state):
  #        delta_energies.append(abs(new_state.energy() - current_state.energy()))
  #    temperature = sum(delta_energies) / len(delta_energies)
 
-	for i in range(MAX_ITER):
-    new_state = random_step(bool_state)
-    energy_change = energy(new_state) - energy(bool_state)
-    if energy_change < -random.random(temp):
-        bool_state = new_state
-    temp = temp * cooling_rate
+	# for i in range(MAX_ITER):
+ #    new_state = random_step(bool_state)
+ #    energy_change = energy(new_state) - energy(bool_state)
+ #    if energy_change < -random.random(TEMPERATURE):
+ #        bool_state = new_state
+ #    TEMPERATURE = TEMPERATURE * COOLING_RATE
 
 
 event_list = create_event_list()
