@@ -5,6 +5,7 @@ from group import Group
 import utils
 import pdb
 from dateutil.parser import parse
+import random
 from random import randrange
 from money import Money, xrates
 from decimal import Decimal
@@ -106,13 +107,31 @@ def create_initial_random_set(event_list):
 
 
 def random_step(bool_state):
-   new_state = []
-   #Copy in_state to new_state
-   for i in len(in_state):
-      new_state [i] = in_state[i]
-   rand_index = randrange(0, len(in_state))
-   #Flip one boolean
-   new_state[rand_index] = not new_state[rand_index] 
+
+	#Copy in_state to new_state
+   	new_state = bool_state.copy()
+
+   	# Find true / false indices
+	true_indices = []
+	false_indices = []
+	for i, event in enumerate(bool_state):
+		if event == True:
+			true_indices.append(i)
+		else:
+			false_indices.append(i)
+
+	random_indices = []
+	random_indices.append(random.choice(true_indices))
+	random_indices.append(random.choice(false_indices))
+
+	for index in random_indices:
+		new_state[index] = not new_state[index]
+
+
+
+   # rand_index = randrange(0, len(in_state))
+   # #Flip one boolean
+   # new_state[rand_index] = not new_state[rand_index] 
 
 def simulated_annealing(bool_state):
 
@@ -121,6 +140,9 @@ def simulated_annealing(bool_state):
 		if item == True:
 			group.events.append(event_list[i])
 			group.event_names.append(event_list[i].name)
+
+	for i in range(MAX_ITER):
+		new_state = random_step(bool_state)
 
 	pdb.set_trace()
 
@@ -135,12 +157,12 @@ def simulated_annealing(bool_state):
  #        delta_energies.append(abs(new_state.energy() - current_state.energy()))
  #    temperature = sum(delta_energies) / len(delta_energies)
 
-	# for i in range(MAX_ITER):
- #    new_state = random_step(bool_state)
- #    energy_change = energy(new_state) - energy(bool_state)
- #    if energy_change < -random.random(temp):
- #        bool_state = new_state
- #    temp = temp * cooling_rate
+	for i in range(MAX_ITER):
+    new_state = random_step(bool_state)
+    energy_change = energy(new_state) - energy(bool_state)
+    if energy_change < -random.random(temp):
+        bool_state = new_state
+    temp = temp * cooling_rate
 
 
 event_list = create_event_list()
