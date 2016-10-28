@@ -10,16 +10,16 @@ from random import randrange
 from money import Money, xrates
 from decimal import Decimal
 import numpy as np
-
+import math
 
 xrates.install('money.exchange.SimpleBackend')
 xrates.base = 'USD'
 
-COOLING_RATE = 0.99
+COOLING_FACTOR = 0.99
 MAX_ITER = 1000
 MAX_EVENTS = 10
 MOVES_PER_TEMPERATURE = 5 #TKTK - find out how to decide on best number for this...
-MAX_CHANGE_NUMBER = 3
+MAX_CHANGE_NUMBER = 8
 
 # TKTK Later make this so that it will pull exchange rates from API to get most updated rate
 # {'', 'EUR', 'HKS', 'CAD', 'MYR', 'CLP', 'US', 'USD', 'CAN', 'CHF', 'GBP', 'SEK', 'AUD'}
@@ -151,23 +151,23 @@ def create_group(bool_state):
 			group.event_names.append(event_list[i].name)
 	return group
 
-def new_group_and_delta_energies(in_state):
+def create_new_group(in_state):
 	new_state = random_step(in_state)
 	new_group = create_group(new_state)
-	delta_energies.append(abs(new_group.energy() - in_group.energy()))
-	return new_group, delta_energies
+	
+	return new_state, new_group
 
 def simulated_annealing(in_state):
 
 	# estimate a good starting temperature by attempting a few non-stupid
     # transitions and measuring the average change in temperature.
 
-	in_group = create_group(in_state)
+	current_group = create_group(in_state)
 	delta_energies = []
 	while len(delta_energies) < 20:
-		new_group, delta_energies = new_group_and_delta_energies(in_state)
+		new_state, new_group = create_new_group(in_state)
+		delta_energies.append(abs(new_group.energy() - current_group.energy()))
 	temperature = sum(delta_energies) / len(delta_energies)
-	pdb.set_trace()
 
     # EXPERIMENT with increasing the cooling factor (and decreasing the cooling
     # rate) to see how this affects the results.
@@ -176,67 +176,69 @@ def simulated_annealing(in_state):
     # thoroughly explore the state-space
 
     # continue until there are no changes in the energy.
+	count = 0
 	not_changed_counter = 0
 	best_group = current_group #TKTK - why do this here?
-	while not_changed_count < MAX_CHANGE_NUMBER:
-		temperature *= cooling_factor
+	while not_changed_counter < MAX_CHANGE_NUMBER:
+		temperature *= COOLING_FACTOR
 
 		# at each temperature, try a bunch of different configurations to
-        # let the system "equilibrate" at this temperature
-        changed = False
-        transition_unconditionally_accepted = 0
-        transition_conditionally_accepted = 0
-        transition_rejected = 0
-        for n_moves in range(MOVES_PER_TEMPERATURE):
-    	# copy_and_transition returns a new state object
-    	new_state = random_step(in_state)
-		new_group = create_group(new_state)
-		delta_energies.append(abs(new_group.energy() - in_group.energy()))
+		# let the system "equilibrate" at this temperature
+		changed = False
+		transition_unconditionally_accepted = 0
+		transition_conditionally_accepted = 0
+		transition_rejected = 0
+		for n_moves in range(MOVES_PER_TEMPERATURE):
+			# copy_and_transition returns a new state object
+			new_state, new_group = create_new_group(in_state)
+			delta_energy = new_group.energy() - current_group.energy()
+			# always accept "downhill" moves that decrease the energy
+			# TKTK Might not want to ALWAYS accept downhill movements. 
+			# Play with this.
+			if delta_energy < 0:
+				current_group = new_group
+				changed = True
+				transition_unconditionally_accepted += 1
+				if new_group.energy() < best_group.energy():
+					best_group = new_group
 
-    if not changed:
-	    not_changed_counter += 1
-	else:
-	    not_changed_counter = 0
-	# for i in range(MAX_ITER):
-	# 	new_state = random_step(in_state)
-	# 	new_group = create_group(new_state)
-	# 	delta_energy = new_group.energy() = in_group.energy()
-	# 	if delta_energy < -
-
-		# in_state = new_state
-
-
-
-	# for i in range(MAX_ITER):
- #    new_state = random_step(bool_state)
- #    energy_change = energy(new_state) - energy(bool_state)
- #    if energy_change < -random.random(TEMPERATURE):
- #        bool_state = new_state
- #    TEMPERATURE = TEMPERATURE * COOLING_RATE
+	    	# conditionally accept "uphill" moves that increase the energy
+			else:
+				r = random.random()
+				if math.exp(-delta_energy / temperature) > r:
+					current_group = new_group
+					transition_conditionally_accepted += 1
+				else:
+					transition_rejected += 1
 
 
+		if not changed:
+			not_changed_counter += 1
+		else:
+			not_changed_counter = 0
+		# EXPERIMENT with resetting the state back to the best_state and
+		# resetting the temperature/=cooling_factor**not_changed_counter and
+		# not_changed_counter=0 and then continuing the simulation. This will
+		# make it so that we make sure that the final state that leaves the
+		# simulated annealing procedure is the best_state and that we have
+		# tried to explore other nearby optimal configurations for this state.
+
+		# print count to make sure working
+		count += 1
+		print(count)
+
+	# print out results of this run and return the best state
+	return best_group
+
+
+# pull in data from google spreadsheet and create event list
+# comprised of a list of instances
 event_list = create_event_list()
 
 # Create initial random bool set
 bool_state = create_initial_random_set(event_list)
 
-simulated_annealing(bool_state)
+# use find best group
+best_group = simulated_annealing(bool_state)
 
-# pdb.set_trace()
-
-
-
-
-
-
-
-
-# pdb.set_trace()
-
-
-
-
-
-# start random sample of events
-# COST FUNCTION
-#distance = 
+pdb.set_trace()
