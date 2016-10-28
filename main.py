@@ -15,10 +15,11 @@ import numpy as np
 xrates.install('money.exchange.SimpleBackend')
 xrates.base = 'USD'
 
-TEMPERATURE = 5000
 COOLING_RATE = 0.99
 MAX_ITER = 1000
 MAX_EVENTS = 10
+MOVES_PER_TEMPERATURE = 5 #TKTK - find out how to decide on best number for this...
+MAX_CHANGE_NUMBER = 3
 
 # TKTK Later make this so that it will pull exchange rates from API to get most updated rate
 # {'', 'EUR', 'HKS', 'CAD', 'MYR', 'CLP', 'US', 'USD', 'CAN', 'CHF', 'GBP', 'SEK', 'AUD'}
@@ -150,6 +151,12 @@ def create_group(bool_state):
 			group.event_names.append(event_list[i].name)
 	return group
 
+def new_group_and_delta_energies(in_state):
+	new_state = random_step(in_state)
+	new_group = create_group(new_state)
+	delta_energies.append(abs(new_group.energy() - in_group.energy()))
+	return new_group, delta_energies
+
 def simulated_annealing(in_state):
 
 	# estimate a good starting temperature by attempting a few non-stupid
@@ -158,26 +165,47 @@ def simulated_annealing(in_state):
 	in_group = create_group(in_state)
 	delta_energies = []
 	while len(delta_energies) < 20:
-		new_state3gies.append(abs(new_group.energy() - in_group.energy()))
+		new_group, delta_energies = new_group_and_delta_energies(in_state)
 	temperature = sum(delta_energies) / len(delta_energies)
 	pdb.set_trace()
 
+    # EXPERIMENT with increasing the cooling factor (and decreasing the cooling
+    # rate) to see how this affects the results.
+
+    # EXPERIMENT with increasing the number of moves per temperature to more
+    # thoroughly explore the state-space
+
+    # continue until there are no changes in the energy.
+	not_changed_counter = 0
+	best_group = current_group #TKTK - why do this here?
+	while not_changed_count < MAX_CHANGE_NUMBER:
+		temperature *= cooling_factor
+
+		# at each temperature, try a bunch of different configurations to
+        # let the system "equilibrate" at this temperature
+        changed = False
+        transition_unconditionally_accepted = 0
+        transition_conditionally_accepted = 0
+        transition_rejected = 0
+        for n_moves in range(MOVES_PER_TEMPERATURE):
+    	# copy_and_transition returns a new state object
+    	new_state = random_step(in_state)
+		new_group = create_group(new_state)
+		delta_energies.append(abs(new_group.energy() - in_group.energy()))
+
+    if not changed:
+	    not_changed_counter += 1
+	else:
+	    not_changed_counter = 0
 	# for i in range(MAX_ITER):
-	# 	new_state = random_step(bool_state)
-	# 	energy_change = group.energy()
+	# 	new_state = random_step(in_state)
+	# 	new_group = create_group(new_state)
+	# 	delta_energy = new_group.energy() = in_group.energy()
+	# 	if delta_energy < -
 
-	# pdb.set_trace()
+		# in_state = new_state
 
 
-	# # estimate a good starting temperature by attempting a few non-stupid
- #    # transitions and measuring the average change in temperature.
- #    current_state.energy()  # <-- hack to make sure the copy_and_transition
- #                            #     works correctly
- #    delta_energies = []
- #    while len(delta_energies) < 20:
- #        new_state = current_state.copy_and_transition()
- #        delta_energies.append(abs(new_state.energy() - current_state.energy()))
- #    temperature = sum(delta_energies) / len(delta_energies)
 
 	# for i in range(MAX_ITER):
  #    new_state = random_step(bool_state)
