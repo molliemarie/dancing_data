@@ -12,6 +12,7 @@ import gspread
 import json
 from oauth2client.service_account import ServiceAccountCredentials
 import utils
+from ast import literal_eval as make_tuple
 
 
 
@@ -31,9 +32,11 @@ worksheet = spreadsheet.worksheet('Sheet1')
 def pull_googledoc_keys():
 	"""Pulls all the values from the keys collumn of the google doc"""
 	keys_from_spreadsheet = []
+	current_keys_from_spreadsheet_tuples = []
 	for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
-		# key = row['name'].lower(), parse(row['start date']).year
-		keys_from_spreadsheet.append(row['key'])
+		if row['key'] != '':
+			# key = row['name'].lower(), parse(row['start date']).year
+			keys_from_spreadsheet.append(make_tuple(row['key']))
 	return keys_from_spreadsheet
 
 def get_soup(url):
@@ -50,7 +53,7 @@ def create_key(event):
 def append_to_event_list(event, event_key, keys_from_spreadsheet):
 	"""Checks to see if event key is already in the spreadsheet. If it's not, 
 	the event is added to the sheet. If it is, it is skipped"""
-	if str(event.key) not in keys_from_spreadsheet:
+	if event.key not in keys_from_spreadsheet:
 		event_list.append(event)
 	return event_list
 
@@ -182,8 +185,13 @@ def mark_obsolete_events():
 def mark_past_events():
 	"""Checks the spreadsheet for past events. If the events are past,
 	this function will change the "status" column to from "upcoming" to "past". """
-	pass
+	for row_number, row  in enumerate(utils.iter_worksheet(spreadsheet, 'Sheet1', header_row = 1)):
+		if row['start date'] != '':
+			if (parse(row['start date']) < datetime.now()) and (row['status'] == 'upcoming'):
+				worksheet.update_cell(str(row_number+2), STATUS_COLUMN, 'past')
 
+def create_tentative_events():
+	pass
 
 			
 # pulls the "keys" from the google spreadsheet
@@ -191,6 +199,8 @@ def mark_past_events():
 # Example: (orient lindy express, 2016)
 # These keys are used to prevent duplication in spreadsheet
 keys_from_spreadsheet = pull_googledoc_keys()
+
+pdb.set_trace()
 
 # Scrape from swingplanit.com
 scrape_swing_planit(keys_from_spreadsheet)
@@ -200,3 +210,9 @@ scrape_dance_cal(keys_from_spreadsheet)
 
 # Once done scraping, this will take all the new rows and push them into the google doc.
 event_info_to_googledoc()
+
+mark_past_events()
+
+
+
+

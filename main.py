@@ -19,7 +19,7 @@ COOLING_FACTOR = 0.99
 MAX_ITER = 1000
 MAX_EVENTS = 10
 MOVES_PER_TEMPERATURE = 5 #TKTK - find out how to decide on best number for this...
-MAX_CHANGE_NUMBER = 8
+MAX_CHANGE_NUMBER = 8 #what's an appropriate number?
 
 # TKTK Later make this so that it will pull exchange rates from API to get most updated rate
 # {'', 'EUR', 'HKS', 'CAD', 'MYR', 'CLP', 'US', 'USD', 'CAN', 'CHF', 'GBP', 'SEK', 'AUD'}
